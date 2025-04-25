@@ -1,84 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tic Tac Toe</title>
+  <title>井字棋游戏 - Tic Tac Toe</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 50px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      margin: 0;
+      padding-top: 50px;
     }
-    table {
-      margin: 0 auto;
-      border-collapse: collapse;
+
+    h1 {
+      font-size: 3em;
+      color: #333;
+      margin-bottom: 20px;
     }
-    td {
-      width: 100px;
-      height: 100px;
-      font-size: 36px;
-      text-align: center;
-      border: 2px solid #333;
+
+    .game-container {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 10px;
+    }
+
+    .cell {
+      background-color: #fff;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5em;
+      font-weight: bold;
+      color: #333;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       cursor: pointer;
+      transition: transform 0.1s ease, background-color 0.3s ease;
+    }
+
+    .cell:hover {
+      background-color: #f0f0f0;
+      transform: scale(1.05);
+    }
+
+    #status {
+      margin-top: 30px;
+      font-size: 1.5em;
+      color: #444;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 1em;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #45a049;
     }
   </style>
 </head>
 <body>
-  <h1>Tic Tac Toe</h1>
-  <table>
-    <tr>
-      <td onclick="makeMove(this)"></td>
-      <td onclick="makeMove(this)"></td>
-      <td onclick="makeMove(this)"></td>
-    </tr>
-    <tr>
-      <td onclick="makeMove(this)"></td>
-      <td onclick="makeMove(this)"></td>
-      <td onclick="makeMove(this)"></td>
-    </tr>
-    <tr>
-      <td onclick="makeMove(this)"></td>
-      <td onclick="makeMove(this)"></td>
-      <td onclick="makeMove(this)"></td>
-    </tr>
-  </table>
-  <h2 id="winner"></h2>
+  <h1>井字棋游戏</h1>
+  <div class="game-container" id="board">
+    <!-- 9 个格子 -->
+  </div>
+  <div id="status">轮到玩家 X</div>
+  <button onclick="resetGame()">重新开始</button>
 
   <script>
-    let currentPlayer = "X";
+    const board = document.getElementById('board');
+    const status = document.getElementById('status');
+    let cells = [];
+    let currentPlayer = 'X';
+    let gameEnded = false;
 
-    function makeMove(cell) {
-      if (cell.innerHTML === "") {
-        cell.innerHTML = currentPlayer;
-        if (checkWinner()) {
-          document.getElementById("winner").innerText = currentPlayer + " wins!";
-          disableBoard();
-        } else {
-          currentPlayer = currentPlayer === "X" ? "O" : "X";
-        }
+    // 初始化格子
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.classList.add('cell');
+      cell.addEventListener('click', () => handleClick(cell, i));
+      board.appendChild(cell);
+      cells.push(cell);
+    }
+
+    function handleClick(cell, index) {
+      if (cell.textContent !== '' || gameEnded) return;
+      cell.textContent = currentPlayer;
+
+      if (checkWinner()) {
+        status.textContent = `🎉 玩家 ${currentPlayer} 获胜！`;
+        gameEnded = true;
+        return;
       }
+
+      if (cells.every(c => c.textContent !== '')) {
+        status.textContent = '🤝 平局！';
+        gameEnded = true;
+        return;
+      }
+
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      status.textContent = `轮到玩家 ${currentPlayer}`;
     }
 
     function checkWinner() {
-      const cells = Array.from(document.getElementsByTagName("td")).map(td => td.innerHTML);
-      const wins = [
-        [0,1,2], [3,4,5], [6,7,8], // rows
-        [0,3,6], [1,4,7], [2,5,8], // columns
-        [0,4,8], [2,4,6]           // diagonals
+      const lines = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
       ];
-      return wins.some(indices =>
-        cells[indices[0]] &&
-        cells[indices[0]] === cells[indices[1]] &&
-        cells[indices[0]] === cells[indices[2]]
-      );
+      return lines.some(([a,b,c]) => {
+        return cells[a].textContent &&
+               cells[a].textContent === cells[b].textContent &&
+               cells[a].textContent === cells[c].textContent;
+      });
     }
 
-    function disableBoard() {
-      const cells = document.getElementsByTagName("td");
-      for (let cell of cells) {
-        cell.onclick = null;
-      }
+    function resetGame() {
+      cells.forEach(cell => cell.textContent = '');
+      currentPlayer = 'X';
+      status.textContent = '轮到玩家 X';
+      gameEnded = false;
     }
   </script>
 </body>
