@@ -221,7 +221,7 @@
   </style>
 </head>
 <body class="theme-classic">
-  <h1>高级井字棋</h1>
+  <h1>井字棋</h1>
   
   <div class="settings">
     <div class="game-mode">
@@ -302,7 +302,7 @@
       
       if (checkWinner()) {
         playSound('winSound');
-        animateStatus(`🎉 玩家 ${currentPlayer} 获胜！`);
+        animateStatus(`🎉 恭喜玩家 ${currentPlayer} 获胜！`);
         scores[currentPlayer]++;
         updateScoreboard();
         gameEnded = true;
@@ -311,7 +311,7 @@
       }
       
       if (cells.every(c => c.textContent !== '')) {
-        animateStatus('🤝 平局！');
+        animateStatus('🤝 生活不是打打杀杀，以和为贵，平局！');
         scores.tie++;
         updateScoreboard();
         gameEnded = true;
@@ -320,7 +320,7 @@
       
       currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
       const statusText = gameMode === 'ai' && currentPlayer === 'O' 
-        ? 'AI思考中...' 
+        ? '等待AI深度思考中...' 
         : `轮到玩家 ${currentPlayer}`;
       animateStatus(statusText);
       
