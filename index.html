@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>井字棋游戏 - Tic Tac Toe</title>
+  <title>高级井字棋游戏 - Tic Tac Toe</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -14,22 +14,30 @@
       justify-content: flex-start;
       height: 100vh;
       margin: 0;
-      padding-top: 50px;
+      padding-top: 30px;
     }
-
     h1 {
-      font-size: 3em;
+      font-size: 2.5em;
       color: #333;
+      margin-bottom: 10px;
+    }
+    .game-mode {
       margin-bottom: 20px;
     }
-
+    .game-mode button {
+      margin: 0 10px;
+      background-color: #2196F3;
+    }
+    .game-mode button:hover {
+      background-color: #0b7dda;
+    }
     .game-container {
       display: grid;
       grid-template-columns: repeat(3, 100px);
       grid-template-rows: repeat(3, 100px);
       gap: 10px;
+      margin: 10px 0;
     }
-
     .cell {
       background-color: #fff;
       border-radius: 12px;
@@ -43,50 +51,94 @@
       cursor: pointer;
       transition: transform 0.1s ease, background-color 0.3s ease;
     }
-
     .cell:hover {
       background-color: #f0f0f0;
       transform: scale(1.05);
     }
-
+    .cell.x {
+      color: #FF5252;
+    }
+    .cell.o {
+      color: #4CAF50;
+    }
+    .winning-cell {
+      animation: pulse 1s infinite;
+      background-color: #FFF9C4;
+    }
     #status {
-      margin-top: 30px;
+      margin: 15px 0;
       font-size: 1.5em;
       color: #444;
+      min-height: 2em;
     }
-
     button {
-      margin-top: 20px;
+      margin: 5px;
       padding: 10px 20px;
       font-size: 1em;
-      background-color: #4CAF50;
       color: white;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       transition: background-color 0.3s ease;
     }
-
     button:hover {
-      background-color: #45a049;
+      opacity: 0.9;
+    }
+    .reset-btn {
+      background-color: #f44336;
+    }
+    .scoreboard {
+      display: flex;
+      justify-content: space-around;
+      width: 300px;
+      margin: 15px 0;
+      font-size: 1.2em;
+      background-color: rgba(255,255,255,0.7);
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    @keyframes pop {
+      0% { transform: scale(0.8); opacity: 0; }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
     }
   </style>
 </head>
 <body>
-  <h1>井字棋游戏</h1>
+  <h1>高级井字棋</h1>
+  <div class="game-mode">
+    <button onclick="setGameMode('human')">双人对战</button>
+    <button onclick="setGameMode('ai')">对战AI</button>
+  </div>
+  <div class="scoreboard">
+    <div>玩家 X: <span id="scoreX">0</span></div>
+    <div>平局: <span id="scoreTie">0</span></div>
+    <div>玩家 O: <span id="scoreO">0</span></div>
+  </div>
   <div class="game-container" id="board">
     <!-- 9 个格子 -->
   </div>
   <div id="status">轮到玩家 X</div>
-  <button onclick="resetGame()">重新开始</button>
-
+  <button class="reset-btn" onclick="resetGame()">重新开始</button>
+  
+  <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3"></audio>
+  <audio id="winSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+  
   <script>
     const board = document.getElementById('board');
     const status = document.getElementById('status');
     let cells = [];
     let currentPlayer = 'X';
     let gameEnded = false;
-
+    let gameMode = 'human';
+    let scores = { X: 0, O: 0, tie: 0 };
+    
     // 初始化格子
     for (let i = 0; i < 9; i++) {
       const cell = document.createElement('div');
@@ -95,27 +147,64 @@
       board.appendChild(cell);
       cells.push(cell);
     }
-
+    
+    function setGameMode(mode) {
+      gameMode = mode;
+      resetGame();
+      status.textContent = mode === 'ai' ? '你(X)对战AI(O)' : '双人对战(X先手)';
+    }
+    
     function handleClick(cell, index) {
       if (cell.textContent !== '' || gameEnded) return;
+      
+      // 播放点击音效
+      document.getElementById('clickSound').play();
+      
       cell.textContent = currentPlayer;
-
+      cell.classList.add(currentPlayer.toLowerCase());
+      cell.style.animation = 'pop 0.3s ease';
+      
       if (checkWinner()) {
+        document.getElementById('winSound').play();
         status.textContent = `🎉 玩家 ${currentPlayer} 获胜！`;
+        scores[currentPlayer]++;
+        updateScoreboard();
         gameEnded = true;
+        highlightWinningCells();
         return;
       }
-
+      
       if (cells.every(c => c.textContent !== '')) {
         status.textContent = '🤝 平局！';
+        scores.tie++;
+        updateScoreboard();
         gameEnded = true;
         return;
       }
-
+      
       currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-      status.textContent = `轮到玩家 ${currentPlayer}`;
+      status.textContent = gameMode === 'ai' && currentPlayer === 'O' 
+        ? 'AI思考中...' 
+        : `轮到玩家 ${currentPlayer}`;
+      
+      // 添加AI回合
+      if (gameMode === 'ai' && currentPlayer === 'O') {
+        makeAIMove();
+      }
     }
-
+    
+    function makeAIMove() {
+      setTimeout(() => {
+        // 简单AI - 随机选择空位
+        const emptyCells = cells.filter(cell => cell.textContent === '');
+        if (emptyCells.length > 0) {
+          const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+          const index = cells.indexOf(randomCell);
+          handleClick(randomCell, index);
+        }
+      }, 500 + Math.random() * 1000); // 随机延迟使AI看起来更自然
+    }
+    
     function checkWinner() {
       const lines = [
         [0,1,2], [3,4,5], [6,7,8],
@@ -128,13 +217,45 @@
                cells[a].textContent === cells[c].textContent;
       });
     }
-
+    
+    function highlightWinningCells() {
+      const lines = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+      
+      for (const [a,b,c] of lines) {
+        if (cells[a].textContent &&
+            cells[a].textContent === cells[b].textContent &&
+            cells[a].textContent === cells[c].textContent) {
+          cells[a].classList.add('winning-cell');
+          cells[b].classList.add('winning-cell');
+          cells[c].classList.add('winning-cell');
+          break;
+        }
+      }
+    }
+    
+    function updateScoreboard() {
+      document.getElementById('scoreX').textContent = scores.X;
+      document.getElementById('scoreO').textContent = scores.O;
+      document.getElementById('scoreTie').textContent = scores.tie;
+    }
+    
     function resetGame() {
-      cells.forEach(cell => cell.textContent = '');
+      cells.forEach(cell => {
+        cell.textContent = '';
+        cell.classList.remove('x', 'o', 'winning-cell');
+        cell.style.animation = '';
+      });
       currentPlayer = 'X';
-      status.textContent = '轮到玩家 X';
+      status.textContent = gameMode === 'ai' ? '你(X)对战AI(O)' : '轮到玩家 X';
       gameEnded = false;
     }
+    
+    // 初始化游戏
+    setGameMode('human');
   </script>
 </body>
 </html>
